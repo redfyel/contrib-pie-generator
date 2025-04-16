@@ -87,7 +87,9 @@ def generate_distinct_colors(base_colors, total_needed):
                 return result
     return result[:total_needed]
 
-pie_colors = generate_distinct_colors(palette, len(labels))
+# Add bot with a neutral gray color
+pie_colors = generate_distinct_colors(palette, len(labels) - 1) + [(0.6, 0.6, 0.6)]  # Neutral gray for bot
+pie_colors = pie_colors[:len(labels)]  # Ensure it matches the number of labels
 
 # === PLOT PIE CHART ===
 plt.figure(figsize=(width, height))
@@ -101,6 +103,8 @@ wedges, texts, autotexts = plt.pie(
     wedgeprops={'edgecolor': 'black', 'linewidth': 1}
 )
 
+# Add bot to the legend at the end
+labels.append("github-actions[bot]")
 plt.legend(wedges, labels, title="Contributors", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
 plt.axis("equal")
 plt.title("Contributions by Commits", fontsize=16, fontweight='bold')
