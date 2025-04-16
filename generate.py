@@ -1,8 +1,6 @@
-import subprocess
+import requests
 import matplotlib.pyplot as plt
 import sys
-from collections import defaultdict
-import re
 import numpy as np
 import colorsys
 from matplotlib import colors as mcolors
@@ -10,47 +8,31 @@ from matplotlib import colors as mcolors
 # === INPUTS ===
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
 width, height = map(int, chart_size.split(','))
-palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else ['#0A122A', '#698F3F', '#E7DECD', '#FBFAF8', '#F8F6F1']
+palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else ['#EBE8DB', '#D76C82', '#B03052', '#3D0301']
 
-# === GATHER GIT LOG DATA ===
-log_output = subprocess.check_output(["git", "log", "--pretty=format:%an||%ae"]).decode("utf-8")
-lines = log_output.strip().split("\n")
+# === GATHER CONTRIBUTORS FROM GITHUB API ===
+repo_url = "https://api.github.com/repos/redfyel/dishcovery/contributors"
+response = requests.get(repo_url)
+contributors_data = response.json()
 
 # === PROCESS CONTRIBUTORS ===
-contributor_commits = defaultdict(int)
+contributor_commits = {}
 display_name_map = {}
 bot_count = 0
 
-for line in lines:
-    try:
-        name, email = line.split("||")
-    except ValueError:
-        continue
-
-    name = name.strip()
-    email = email.strip().lower()
-
-    if "github-actions[bot]" in name:
+for contributor in contributors_data:
+    username = contributor["login"]
+    commit_count = contributor["contributions"]
+    
+    # Skip bot contributions
+    if "bot" in username.lower():
         bot_count += 1
         continue
 
-    # GitHub noreply -> get username
-    match = re.match(r"([a-zA-Z0-9\-]+)@users\.noreply\.github\.com", email)
-    if match:
-        username = match.group(1).lower()
-        display = f"{username} ({name})" if username != name.lower() else username
-        user_id = username
-    else:
-        # Normal email, unify based on lowercased email
-        username = re.sub(r'\s+', '', name.lower())
-        user_id = email
-        display = username if username == name.lower() else f"{username} ({name})"
+    display_name_map[username] = username
+    contributor_commits[username] = commit_count
 
-    if user_id not in display_name_map:
-        display_name_map[user_id] = display
-
-    contributor_commits[user_id] += 1
-
+# Add bot with a neutral gray color
 if bot_count > 0:
     contributor_commits["__bot__"] = bot_count
     display_name_map["__bot__"] = "github-actions[bot]"
@@ -87,7 +69,7 @@ def generate_distinct_colors(base_colors, total_needed):
                 return result
     return result[:total_needed]
 
-# Add bot with a neutral gray color
+# Generate the colors for the contributors
 pie_colors = generate_distinct_colors(palette, len(labels) - 1) + [(0.6, 0.6, 0.6)]  # Neutral gray for bot
 pie_colors = pie_colors[:len(labels)]  # Ensure it matches the number of labels
 
