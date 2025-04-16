@@ -1,7 +1,7 @@
 import subprocess
 import matplotlib.pyplot as plt
 import sys
-from collections import defaultdict, Counter
+from collections import defaultdict
 import re
 import numpy as np
 from matplotlib import colors as mcolors
@@ -16,9 +16,8 @@ log_output = subprocess.check_output(["git", "log", "--pretty=format:%an||%ae"])
 lines = log_output.strip().split("\n")
 
 # === MERGE CONTRIBUTORS ===
-email_to_id = {}
-id_to_display = {}
 contributor_commits = defaultdict(int)
+id_to_display = {}
 bot_count = 0
 
 for line in lines:
@@ -31,52 +30,59 @@ for line in lines:
         bot_count += 1
         continue
 
-    # If noreply GitHub email, extract username
+    # Extract GitHub username if possible
     match = re.match(r"(.*)@users\.noreply\.github\.com", email)
     if match:
         username = match.group(1).lower()
-        user_id = username  # Unify based on GitHub username
-        display = f"{name} ({username})" if name.lower() != username else username
+        display = username if name.lower() == username else f"{username} ({name})"
+        user_id = username
     else:
-        user_id = email.lower()
-        display = name
+        # Fallback to email username
+        username = email.split("@")[0].lower()
+        display = username if name.lower() == username else f"{username} ({name})"
+        user_id = username
 
-    # Assign only the first encountered display name for consistency
+    contributor_commits[user_id] += 1
     if user_id not in id_to_display:
         id_to_display[user_id] = display
 
-    contributor_commits[user_id] += 1
-
-# === APPEND BOT ===
+# Append bot
 if bot_count > 0:
     contributor_commits["bot"] = bot_count
     id_to_display["bot"] = "GitHub Actions [bot]"
 
-# === PREPARE DATA FOR CHART ===
-labels = [id_to_display[k] for k in contributor_commits.keys()]
+# === DATA FOR PIE CHART ===
+labels = [id_to_display[k] for k in contributor_commits]
 sizes = list(contributor_commits.values())
 
-# === SMART SHADE GENERATOR ===
-def generate_distinct_colors(base_colors, total):
+# === SHADE GENERATOR BASED ON BRIGHTNESS ===
+def is_dark(color_rgb):
+    r, g, b = color_rgb
+    brightness = 0.299 * r + 0.587 * g + 0.114 * b
+    return brightness < 0.5
+
+def generate_smart_shades(base_colors, total_needed):
     base_rgb = [np.array(mcolors.to_rgb(c)) for c in base_colors]
     output = []
-    shade_steps = (total // len(base_rgb)) + 1
+    steps = (total_needed // len(base_rgb)) + 1
 
     for base in base_rgb:
-        for i in range(shade_steps):
-            factor = 1 - (i * 0.15)
+        dark = is_dark(base)
+        for i in range(steps):
+            factor = 1 - (i * 0.12) if dark else 1 + (i * 0.12)
             shaded = tuple((base * factor).clip(0, 1))
             output.append(shaded)
-            if len(output) == total:
+            if len(output) == total_needed:
                 return output
-    return output[:total]
+    return output[:total_needed]
 
+# === COLOR HANDLING ===
 if palette:
-    pie_colors = generate_distinct_colors(palette, len(labels))
+    pie_colors = generate_smart_shades(palette, len(labels))
 else:
     pie_colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
-# === PLOT PIE CHART ===
+# === PLOT PIE ===
 plt.figure(figsize=(width, height))
 wedges, texts, autotexts = plt.pie(
     sizes,
