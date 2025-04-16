@@ -19,3 +19,7 @@ jobs:
     uses: your-username/contrib-pie-generator/.github/workflows/main.yml@v1
     with:
       chart-size: '8,8'  # Optional input for chart size
+
+
+```
+![Contributor Pie](contributor-pie.png)
