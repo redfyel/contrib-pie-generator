@@ -4,6 +4,7 @@ import sys
 from collections import Counter
 import re
 import numpy as np
+from matplotlib import colors  # Correct import for colors module
 
 # Accept chart size from the input (format: "width,height")
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
@@ -52,7 +53,7 @@ sizes = list(author_counts.values())
 # Use the custom palette if provided; otherwise, use Matplotlib's default "tab20c".
 if palette:
     # Generate lighter shades from the palette for better contrast
-    colors = [np.array(plt.colors.hex2color(c)) * 0.7 for c in palette[:len(labels)]]
+    colors = [np.array(colors.hex2color(c)) * 0.7 for c in palette[:len(labels)]]
 else:
     colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
