@@ -5,6 +5,7 @@ import numpy as np
 import requests
 import colorsys
 from matplotlib import colors as mcolors
+import matplotlib.patheffects as path_effects  # NEW
 
 # === INPUTS ===
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
@@ -56,7 +57,14 @@ sizes = [commit_count for _, commit_count in contributors]
 def generate_distinct_colors(base_colors, total_needed):
     base_rgb = [np.array(mcolors.to_rgb(c)) for c in base_colors]
     result = []
-    shade_steps = (total_needed // len(base_rgb)) + 1
+
+    if total_needed <= len(base_rgb):
+        return base_rgb[:total_needed]
+
+    # Use base first
+    result.extend(base_rgb)
+
+    shade_steps = ((total_needed - len(base_rgb)) // len(base_rgb)) + 1
 
     for base in base_rgb:
         r, g, b = base
@@ -86,11 +94,19 @@ wedges, texts, autotexts = plt.pie(
     sizes,
     labels=None,
     colors=pie_colors,
-    autopct="%1.1f%%",
+    autopct=lambda pct: f"{pct:.1f}%",
     startangle=140,
     textprops={'color': 'white', 'fontsize': 12},
     wedgeprops={'edgecolor': 'black', 'linewidth': 1}
 )
+
+# Add border stroke to percentage text
+for autotext in autotexts:
+    autotext.set_path_effects([
+        path_effects.Stroke(linewidth=2, foreground='black'),
+        path_effects.Normal()
+    ])
+
 
 # Add bot to the legend at the end
 labels.append("github-actions[bot]")
