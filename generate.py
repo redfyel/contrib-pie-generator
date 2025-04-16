@@ -1,23 +1,25 @@
 import subprocess
 import matplotlib.pyplot as plt
 import sys
-from collections import defaultdict, Counter
+from collections import defaultdict
 import re
 import numpy as np
+import colorsys
 from matplotlib import colors as mcolors
 
 # === INPUTS ===
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
 width, height = map(int, chart_size.split(','))
-palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else None
+palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else ['#0A122A', '#698F3F', '#E7DECD', '#FBFAF8', '#F8F6F1']
 
 # === GATHER GIT LOG DATA ===
 log_output = subprocess.check_output(["git", "log", "--pretty=format:%an||%ae"]).decode("utf-8")
 lines = log_output.strip().split("\n")
 
-# === UNIFY CONTRIBUTORS BY USERNAME ===
-user_commits = defaultdict(int)
-email_to_username = {}
+# === PROCESS CONTRIBUTORS ===
+contributor_commits = defaultdict(int)
+display_name_map = {}
+bot_count = 0
 
 for line in lines:
     try:
@@ -25,51 +27,67 @@ for line in lines:
     except ValueError:
         continue
 
+    name = name.strip()
+    email = email.strip().lower()
+
     if "github-actions[bot]" in name:
-        user_commits["github-actions[bot]"] += 1
+        bot_count += 1
         continue
 
-    # Try to extract GitHub username from noreply email
-    match = re.match(r"(\d+)?\+?([^@]+)@users\.noreply\.github\.com", email)
+    # GitHub noreply -> get username
+    match = re.match(r"([a-zA-Z0-9\-]+)@users\.noreply\.github\.com", email)
     if match:
-        username = match.group(2).lower()
+        username = match.group(1).lower()
+        display = f"{username} ({name})" if username != name.lower() else username
+        user_id = username
     else:
-        username = re.sub(r"\s+", "", name).lower()  # fallback to name without spaces
+        # Normal email, unify based on lowercased email
+        username = re.sub(r'\s+', '', name.lower())
+        user_id = email
+        display = username if username == name.lower() else f"{username} ({name})"
 
-    user_commits[username] += 1
+    if user_id not in display_name_map:
+        display_name_map[user_id] = display
 
-# === PREPARE DATA ===
-labels = list(user_commits.keys())
-sizes = list(user_commits.values())
+    contributor_commits[user_id] += 1
 
-# === DETERMINE IF COLOR IS DARK ===
-def is_dark(rgb):
-    r, g, b = rgb
-    brightness = (r*299 + g*587 + b*114) / 1000  # luminance formula
-    return brightness < 0.5
+if bot_count > 0:
+    contributor_commits["__bot__"] = bot_count
+    display_name_map["__bot__"] = "github-actions[bot]"
 
-# === GENERATE SHADED COLORS ===
-def generate_smart_shades(base_colors, total):
+# === ORDER CONTRIBUTORS ===
+contributors = list(contributor_commits.items())
+# Move bot to end
+contributors.sort(key=lambda x: (x[0] == '__bot__', -x[1]))
+
+labels = [display_name_map[user_id] for user_id, _ in contributors]
+sizes = [commit_count for _, commit_count in contributors]
+
+# === GENERATE DISTINCT COLORS ===
+def generate_distinct_colors(base_colors, total_needed):
     base_rgb = [np.array(mcolors.to_rgb(c)) for c in base_colors]
-    output = []
-    shade_steps = (total // len(base_rgb)) + 1
+    result = []
+    shade_steps = (total_needed // len(base_rgb)) + 1
 
     for base in base_rgb:
-        dark = is_dark(base)
-        for i in range(shade_steps):
-            # Adjust brightness toward white if dark, or toward black if light
-            factor = 1 + (i * 0.15) if dark else 1 - (i * 0.15)
-            adjusted = (base * factor).clip(0, 1)
-            output.append(adjusted)
-            if len(output) == total:
-                return output
-    return output[:total]
+        r, g, b = base
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
 
-# === SET FINAL COLORS ===
-if palette:
-    pie_colors = generate_smart_shades(palette, len(labels))
-else:
-    pie_colors = plt.get_cmap("tab20c").colors[:len(labels)]
+        for step in range(shade_steps):
+            hue_shift = (step * 0.11) % 1.0
+            light_adjust = (0.4 + 0.6 * ((step + 1) / shade_steps)) if l < 0.5 else (1.0 - 0.5 * ((step + 1) / shade_steps))
+            new_h = (h + hue_shift) % 1.0
+            new_l = max(0.15, min(0.95, light_adjust))
+            new_s = min(1.0, s * 1.1)
+
+            new_rgb = colorsys.hls_to_rgb(new_h, new_l, new_s)
+            result.append(new_rgb)
+
+            if len(result) == total_needed:
+                return result
+    return result[:total_needed]
+
+pie_colors = generate_distinct_colors(palette, len(labels))
 
 # === PLOT PIE CHART ===
 plt.figure(figsize=(width, height))
