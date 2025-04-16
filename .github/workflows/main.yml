@@ -10,7 +10,11 @@ on:
       palette:
         required: false
         type: string
-        default: '#EBE8DB, #D76C82, #B03052, #3D0301' 
+        default: '#EBE8DB, #D76C82, #B03052, #3D0301'
+      repo-url:
+        required: true
+        type: string
+
 
 jobs:
   chart:
@@ -40,9 +44,9 @@ jobs:
       - name: Generate Chart
         run: |
           if [ "${{ inputs.palette }}" != "" ]; then
-              python generator/generate.py "${{ inputs.chart-size }}" "${{ inputs.palette }}"
+            python generator/generate.py "${{ inputs.chart-size }}" "${{ inputs.palette }}" "${{ inputs.repo-url }}"
           else
-              python generator/generate.py "${{ inputs.chart-size }}"
+            python generator/generate.py "${{ inputs.chart-size }}" "" "${{ inputs.repo-url }}"
           fi
 
       - name: Commit Chart and Update README
