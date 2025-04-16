@@ -1,0 +1,15 @@
+name: 'Contributor Pie Chart Generator'
+description: 'Generates a pie chart of repository contributors based on commit count.'
+author: 'your-username'
+inputs:
+  chart-size:
+    description: 'Size of the pie chart'
+    required: false
+    default: '6,6'  # Default size
+runs:
+  using: 'python'
+  main: 'scripts/generate.py'
+  
+branding:
+  icon: 'zap'  
+  color: 'blue' 

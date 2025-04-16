@@ -1,16 +1,21 @@
 # 🧁 Contributor Pie Chart Generator
 
-A GitHub Action that generates a contributor pie chart based on commit count.
+This GitHub Action generates a pie chart showing the contribution of each author in your repository, based on commit counts.
 
 ## Usage
 
-In your project repo, use:
+Add the following to your `.github/workflows/contributor-chart.yml`:
 
 ```yaml
-# .github/workflows/contributor-chart.yml
-jobs:
-  chart:
-    uses: your-username/contrib-pie-generator/.github/workflows/main.yml@main
-```
+name: Generate Contributor Pie Chart
 
-![Contributor Pie](contributor-pie.png)
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the main branch
+
+jobs:
+  generate:
+    uses: your-username/contrib-pie-generator/.github/workflows/main.yml@v1
+    with:
+      chart-size: '8,8'  # Optional input for chart size

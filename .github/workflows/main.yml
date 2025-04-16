@@ -1,7 +1,12 @@
 name: Generate Contributor Pie Chart
 
 on:
-  workflow_call:
+  workflow_dispatch:   
+    inputs:
+      chart-size:
+        description: 'Size of the chart'
+        required: false
+        default: '6,6'
 
 jobs:
   chart:
@@ -18,7 +23,8 @@ jobs:
         run: pip install matplotlib
 
       - name: Generate Chart
-        run: python scripts/generate.py
+        run: |
+          python .github/actions/contrib-pie/scripts/generate.py ${{ inputs.chart-size }}
 
       - name: Commit Chart
         run: |
