@@ -12,13 +12,11 @@ jobs:
   chart:
     runs-on: ubuntu-latest
     steps:
-      # Checkout the repository from the caller (if needed)
       - name: Checkout Caller Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Checkout the generator repository fully into a subdirectory called "generator"
       - name: Checkout Generator Repo
         uses: actions/checkout@v4
         with:
@@ -26,10 +24,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           path: generator
-
-      # Debug: list contents of the generator directory to verify generate.py is present
-      - name: List Generator Directory
-        run: ls -la generator
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -39,15 +33,15 @@ jobs:
       - name: Install dependencies
         run: pip install matplotlib
 
-      # Execute generate.py from the generator directory using the provided chart size input
       - name: Generate Chart
         run: python generator/generate.py ${{ inputs.chart-size }}
 
       - name: Commit Chart
+        env:
+          REPO_TOKEN: ${{ secrets.PUSH_TOKEN }}  
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add contributor-pie.png
           git commit -m "📊 Auto-update contributor pie chart" || echo "No changes"
-          git push https://x-access-token:${{ secrets.PUSH_TOKEN }}@github.com/${{ github.repository }}.git
-
+          git push https://x-access-token:${REPO_TOKEN}@github.com/${{ github.repository }}.git
