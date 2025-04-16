@@ -12,9 +12,20 @@ jobs:
   chart:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # Checkout the caller repository if needed
+      - name: Checkout Caller Repo
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # ✅ critical for git log + grabbing all files
+          fetch-depth: 0
+
+      # Explicitly checkout the generator repo
+      - name: Checkout Generator Repo
+        uses: actions/checkout@v4
+        with:
+          repository: redfyel/contrib-pie-generator
+          token: ${{ secrets.GITHUB_TOKEN }}  # Ensure proper access
+          fetch-depth: 0
+          path: generator
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,8 +35,9 @@ jobs:
       - name: Install dependencies
         run: pip install matplotlib
 
+      # Run the generate.py script from the checked-out generator repo directory
       - name: Generate Chart
-        run: python generate.py ${{ inputs.chart-size }}
+        run: python generator/generate.py ${{ inputs.chart-size }}
 
       - name: Commit Chart
         run: |
