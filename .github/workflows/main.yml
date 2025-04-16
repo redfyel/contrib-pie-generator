@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: redfyel/contrib-pie-generator
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub
           fetch-depth: 0
           path: generator
 
@@ -42,4 +42,4 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add contributor-pie.png
           git commit -m "📊 Auto-update contributor pie chart" || echo "No changes"
-          git push git@github.com:${{ github.repository }}.git HEAD:main
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
