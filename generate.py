@@ -2,6 +2,7 @@ import requests
 import matplotlib.pyplot as plt
 import sys
 import numpy as np
+import requests
 import colorsys
 from matplotlib import colors as mcolors
 
@@ -9,9 +10,15 @@ from matplotlib import colors as mcolors
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
 width, height = map(int, chart_size.split(','))
 palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else ['#EBE8DB', '#D76C82', '#B03052', '#3D0301']
+repo_url = sys.argv[3] if len(sys.argv) > 3 else None
+
+# Check if the repository URL is provided
+if not repo_url:
+    print("Error: No repository URL provided. Please provide the repository URL as the 3rd argument.")
+    sys.exit(1)
+
 
 # === GATHER CONTRIBUTORS FROM GITHUB API ===
-repo_url = "https://api.github.com/repos/redfyel/dishcovery/contributors"
 response = requests.get(repo_url)
 contributors_data = response.json()
 
@@ -70,8 +77,8 @@ def generate_distinct_colors(base_colors, total_needed):
     return result[:total_needed]
 
 # Generate the colors for the contributors
-pie_colors = generate_distinct_colors(palette, len(labels) - 1) + [(0.6, 0.6, 0.6)]  # Neutral gray for bot
-pie_colors = pie_colors[:len(labels)]  # Ensure it matches the number of labels
+pie_colors = generate_distinct_colors(palette, len(labels) - 1) + [(0.6, 0.6, 0.6)]  
+pie_colors = pie_colors[:len(labels)] 
 
 # === PLOT PIE CHART ===
 plt.figure(figsize=(width, height))
