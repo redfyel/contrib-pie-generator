@@ -37,11 +37,9 @@ jobs:
         run: python generator/generate.py ${{ inputs.chart-size }}
 
       - name: Commit Chart
-        env:
-          REPO_TOKEN: ${{ secrets.PUSH_TOKEN }}  
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add contributor-pie.png
           git commit -m "📊 Auto-update contributor pie chart" || echo "No changes"
-          git push https://x-access-token:${REPO_TOKEN}@github.com/${{ github.repository }}.git
+          git push git@github.com:${{ github.repository }}.git HEAD:main
