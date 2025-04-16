@@ -1,7 +1,13 @@
 name: Generate Contributor Pie Chart
 
 on:
-  workflow_call:  
+  workflow_call:
+    inputs:
+      chart-size:
+        required: false
+        type: string
+        default: '6,6'
+
 
 jobs:
   chart:
