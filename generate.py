@@ -1,96 +1,95 @@
 import subprocess
 import matplotlib.pyplot as plt
 import sys
-from collections import Counter
+from collections import defaultdict, Counter
 import re
 import numpy as np
-from matplotlib import colors as mcolors  # Avoid naming conflict with `colors` list
+from matplotlib import colors as mcolors
 
-# --- Input handling ---
+# === INPUTS ===
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
 width, height = map(int, chart_size.split(','))
 palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else None
 
-# --- Get git commit author data ---
+# === GATHER GIT LOG DATA ===
 log_output = subprocess.check_output(["git", "log", "--pretty=format:%an||%ae"]).decode("utf-8")
 lines = log_output.strip().split("\n")
 
-# --- Contributor mapping & count ---
-name_map = {}
-author_data = []
+# === MERGE CONTRIBUTORS ===
+email_to_id = {}
+id_to_display = {}
+contributor_commits = defaultdict(int)
 bot_count = 0
 
 for line in lines:
     try:
         name, email = line.split("||")
     except ValueError:
-        name = line
-        email = ""
+        continue
 
-    # Detect GitHub Actions bot
     if "github-actions[bot]" in name:
         bot_count += 1
         continue
 
+    # If noreply GitHub email, extract username
     match = re.match(r"(.*)@users\.noreply\.github\.com", email)
     if match:
-        username = match.group(1)
-        # Merge aliases: if name != username, treat them as one
-        key = username.lower()
-        display = f"{name} ({username})" if name.lower() != username.lower() else username
+        username = match.group(1).lower()
+        user_id = username  # Unify based on GitHub username
+        display = f"{name} ({username})" if name.lower() != username else username
     else:
-        key = name.lower()
+        user_id = email.lower()
         display = name
 
-    name_map[key] = display
-    author_data.append(key)
+    # Assign only the first encountered display name for consistency
+    if user_id not in id_to_display:
+        id_to_display[user_id] = display
 
-# Count and resolve display names
-author_counts = Counter(author_data)
-labels = [name_map[k] for k in author_counts.keys()]
-sizes = list(author_counts.values())
+    contributor_commits[user_id] += 1
 
-# Append bot at the end
+# === APPEND BOT ===
 if bot_count > 0:
-    labels.append("GitHub Actions [bot]")
-    sizes.append(bot_count)
+    contributor_commits["bot"] = bot_count
+    id_to_display["bot"] = "GitHub Actions [bot]"
 
-# --- Generate distinct shades from base palette ---
-def generate_shades(base_colors, total):
+# === PREPARE DATA FOR CHART ===
+labels = [id_to_display[k] for k in contributor_commits.keys()]
+sizes = list(contributor_commits.values())
+
+# === SMART SHADE GENERATOR ===
+def generate_distinct_colors(base_colors, total):
+    base_rgb = [np.array(mcolors.to_rgb(c)) for c in base_colors]
     output = []
-    steps = max(1, total // len(base_colors) + 1)
-    for i, base in enumerate(base_colors):
-        base_rgb = np.array(mcolors.to_rgb(base))
-        for j in range(steps):
-            factor = 1 - (j / (steps * 1.5))  # Slightly darker each step
-            shaded = tuple((base_rgb * factor).clip(0, 1))
+    shade_steps = (total // len(base_rgb)) + 1
+
+    for base in base_rgb:
+        for i in range(shade_steps):
+            factor = 1 - (i * 0.15)
+            shaded = tuple((base * factor).clip(0, 1))
             output.append(shaded)
             if len(output) == total:
                 return output
     return output[:total]
 
 if palette:
-    pie_colors = generate_shades(palette, len(labels))
+    pie_colors = generate_distinct_colors(palette, len(labels))
 else:
-    cmap = plt.get_cmap("tab20c")
-    pie_colors = cmap.colors[:len(labels)]
+    pie_colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
-# --- Plotting ---
+# === PLOT PIE CHART ===
 plt.figure(figsize=(width, height))
 wedges, texts, autotexts = plt.pie(
     sizes,
-    labels=None,  # Remove inline labels
+    labels=None,
     colors=pie_colors,
     autopct="%1.1f%%",
     startangle=140,
     textprops={'color': 'white', 'fontsize': 12},
-    wedgeprops={'edgecolor': 'black', 'linewidth': 1, 'linestyle': 'solid'}
+    wedgeprops={'edgecolor': 'black', 'linewidth': 1}
 )
 
-# Legend with names
 plt.legend(wedges, labels, title="Contributors", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
-
 plt.axis("equal")
-plt.title("Contributions by Commits", fontsize=14, fontweight='bold')
+plt.title("Contributions by Commits", fontsize=16, fontweight='bold')
 plt.savefig("contributor-pie.png", bbox_inches="tight")
 plt.show()
