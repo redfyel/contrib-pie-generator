@@ -25,7 +25,7 @@ jobs:
         run: pip install matplotlib
 
       - name: Generate Chart
-        run: python scripts/generate.py ${{ inputs.chart-size }}
+        run: python generate.py ${{ inputs.chart-size }}
 
       - name: Commit Chart
         run: |
