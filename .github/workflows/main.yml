@@ -7,6 +7,10 @@ on:
         required: false
         type: string
         default: '6,6'
+      palette:
+        required: false
+        type: string
+        default: ''  # Provide comma-separated colors here if desired
 
 jobs:
   chart:
@@ -34,7 +38,12 @@ jobs:
         run: pip install matplotlib
 
       - name: Generate Chart
-        run: python generator/generate.py ${{ inputs.chart-size }}
+        run: |
+          if [ "${{ inputs.palette }}" != "" ]; then
+              python generator/generate.py "${{ inputs.chart-size }}" "${{ inputs.palette }}"
+          else
+              python generator/generate.py "${{ inputs.chart-size }}"
+          fi
 
       - name: Commit Chart and Update README
         run: |
