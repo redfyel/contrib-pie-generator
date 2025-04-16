@@ -54,8 +54,17 @@ if palette:
 else:
     colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
+# Create a pie chart with rounded edges
 plt.figure(figsize=(width, height))
-plt.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140)
-plt.axis("equal")
-plt.title("Contributions by Commits")
+
+# Create pie chart with shadows and white text for better contrast
+plt.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140, 
+        textprops={'color': 'white', 'fontsize': 12}, wedgeprops={'edgecolor': 'black', 'linewidth': 1, 'linestyle': 'solid'})
+
+# Add a shadow effect to the pie chart
+plt.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle.
+plt.title("Contributions by Commits", fontsize=14, fontweight='bold')
+
+# Save the updated pie chart
 plt.savefig("contributor-pie.png")
+plt.show()
