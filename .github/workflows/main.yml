@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: redfyel/contrib-pie-generator
-          token: ${{ secrets.GITHUB_TOKEN }}  # Automatically provided by GitHub
+          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           path: generator
 
@@ -36,10 +36,14 @@ jobs:
       - name: Generate Chart
         run: python generator/generate.py ${{ inputs.chart-size }}
 
-      - name: Commit Chart
+      - name: Commit Chart and Update README
         run: |
+          # Append image reference to README.md if not already present
+          if ! grep -q "!\[Contributor Pie Chart\](contributor-pie.png)" README.md; then
+              echo -e "\n![Contributor Pie Chart](contributor-pie.png)" >> README.md
+          fi
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add contributor-pie.png
-          git commit -m "📊 Auto-update contributor pie chart" || echo "No changes"
+          git add contributor-pie.png README.md
+          git commit -m "📊 Auto-update contributor pie chart and update README" || echo "No changes"
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
