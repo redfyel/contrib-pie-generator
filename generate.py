@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sys
 from collections import Counter
 import re
+import numpy as np
 
 # Accept chart size from the input (format: "width,height")
 chart_size = sys.argv[1] if len(sys.argv) > 1 else '6,6'
@@ -50,7 +51,8 @@ sizes = list(author_counts.values())
 
 # Use the custom palette if provided; otherwise, use Matplotlib's default "tab20c".
 if palette:
-    colors = palette[:len(labels)]
+    # Generate lighter shades from the palette for better contrast
+    colors = [np.array(plt.colors.hex2color(c)) * 0.7 for c in palette[:len(labels)]]
 else:
     colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
@@ -58,13 +60,16 @@ else:
 plt.figure(figsize=(width, height))
 
 # Create pie chart with shadows and white text for better contrast
-plt.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140, 
-        textprops={'color': 'white', 'fontsize': 12}, wedgeprops={'edgecolor': 'black', 'linewidth': 1, 'linestyle': 'solid'})
+wedges, texts, autotexts = plt.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=140, 
+                                   textprops={'color': 'white', 'fontsize': 12}, wedgeprops={'edgecolor': 'black', 'linewidth': 1, 'linestyle': 'solid'})
+
+# Add a legend on the side of the pie chart
+plt.legend(wedges, labels, title="Contributors", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
 
 # Add a shadow effect to the pie chart
 plt.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle.
 plt.title("Contributions by Commits", fontsize=14, fontweight='bold')
 
 # Save the updated pie chart
-plt.savefig("contributor-pie.png")
+plt.savefig("contributor-pie.png", bbox_inches="tight")
 plt.show()
