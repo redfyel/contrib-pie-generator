@@ -10,7 +10,7 @@ on:
       palette:
         required: false
         type: string
-        default: ''  # Provide comma-separated colors here if desired
+        default: '#EBE8DB, #D76C82, #B03052, #3D0301' 
 
 jobs:
   chart:
@@ -51,8 +51,14 @@ jobs:
           if ! grep -q "!\[Contributor Pie Chart\](contributor-pie.png)" README.md; then
               echo -e "\n![Contributor Pie Chart](contributor-pie.png)" >> README.md
           fi
+          
+          # Set Git user and commit the changes (chart + README update)
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add contributor-pie.png README.md
+          
+          # Commit and push changes, if any
           git commit -m "📊 Auto-update contributor pie chart and update README" || echo "No changes"
+          
+          # Push changes to the repository
           git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
