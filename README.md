@@ -11,4 +11,6 @@ In your project repo, use:
 jobs:
   chart:
     uses: your-username/contrib-pie-generator/.github/workflows/main.yml@main
-![Contributor Pie](/contributor-pie.png)
+```
+
+![Contributor Pie](contributor-pie.png)
