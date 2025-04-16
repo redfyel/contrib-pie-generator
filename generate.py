@@ -96,14 +96,14 @@ wedges, texts, autotexts = plt.pie(
     colors=pie_colors,
     autopct=lambda pct: f"{pct:.1f}%",
     startangle=140,
-    textprops={'color': 'white', 'fontsize': 12},
+    textprops={'color': 'white', 'fontsize': 14},
     wedgeprops={'edgecolor': 'black', 'linewidth': 1}
 )
 
 # Add border stroke to percentage text
 for autotext in autotexts:
     autotext.set_path_effects([
-        path_effects.Stroke(linewidth=2, foreground='black'),
+        path_effects.Stroke(linewidth=1, foreground='black'),
         path_effects.Normal()
     ])
 
