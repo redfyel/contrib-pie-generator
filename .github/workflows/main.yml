@@ -1,0 +1,29 @@
+name: Generate Contributor Pie Chart
+
+on:
+  workflow_call:
+
+jobs:
+  chart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install matplotlib
+
+      - name: Generate Chart
+        run: python scripts/generate.py
+
+      - name: Commit Chart
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add contributor-pie.png
+          git commit -m "📊 Auto-update contributor pie chart" || echo "No changes"
+          git push
