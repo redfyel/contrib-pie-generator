@@ -1,7 +1,7 @@
 import subprocess
 import matplotlib.pyplot as plt
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 import re
 import numpy as np
 from matplotlib import colors as mcolors
@@ -15,10 +15,9 @@ palette = [c.strip() for c in sys.argv[2].split(',')] if len(sys.argv) > 2 else 
 log_output = subprocess.check_output(["git", "log", "--pretty=format:%an||%ae"]).decode("utf-8")
 lines = log_output.strip().split("\n")
 
-# === MERGE CONTRIBUTORS ===
-contributor_commits = defaultdict(int)
-id_to_display = {}
-bot_count = 0
+# === UNIFY CONTRIBUTORS BY USERNAME ===
+user_commits = defaultdict(int)
+email_to_username = {}
 
 for line in lines:
     try:
@@ -26,60 +25,49 @@ for line in lines:
     except ValueError:
         continue
 
-    name = name.strip()
-    email = email.strip()
-
     if "github-actions[bot]" in name:
-        bot_count += 1
+        user_commits["github-actions[bot]"] += 1
         continue
 
-    match = re.match(r"(.*)@users\.noreply\.github\.com", email)
+    # Try to extract GitHub username from noreply email
+    match = re.match(r"(\d+)?\+?([^@]+)@users\.noreply\.github\.com", email)
     if match:
-        username = match.group(1).lower()
-        display = f"{username} ({name})" if username != name.lower() else username
-        contributor_id = username
+        username = match.group(2).lower()
     else:
-        contributor_id = email.lower()
-        display = contributor_id
+        username = re.sub(r"\s+", "", name).lower()  # fallback to name without spaces
 
-    if contributor_id not in id_to_display:
-        id_to_display[contributor_id] = display
+    user_commits[username] += 1
 
-    contributor_commits[contributor_id] += 1
+# === PREPARE DATA ===
+labels = list(user_commits.keys())
+sizes = list(user_commits.values())
 
-# === APPEND BOT ===
-if bot_count > 0:
-    contributor_commits["bot"] = bot_count
-    id_to_display["bot"] = "github-actions[bot]"
+# === DETERMINE IF COLOR IS DARK ===
+def is_dark(rgb):
+    r, g, b = rgb
+    brightness = (r*299 + g*587 + b*114) / 1000  # luminance formula
+    return brightness < 0.5
 
-# === PREPARE FINAL DATA ===
-ordered_ids = list(contributor_commits.keys())
-labels = [id_to_display[cid] for cid in ordered_ids]
-sizes = [contributor_commits[cid] for cid in ordered_ids]
-
-# === SHADE SMARTNESS ===
-def is_dark(color_rgb):
-    r, g, b = color_rgb
-    luminance = 0.299*r + 0.587*g + 0.114*b
-    return luminance < 0.5
-
-def generate_balanced_shades(base_colors, total_needed):
+# === GENERATE SHADED COLORS ===
+def generate_smart_shades(base_colors, total):
     base_rgb = [np.array(mcolors.to_rgb(c)) for c in base_colors]
     output = []
-    shade_steps = (total_needed // len(base_rgb)) + 1
+    shade_steps = (total // len(base_rgb)) + 1
 
     for base in base_rgb:
         dark = is_dark(base)
         for i in range(shade_steps):
-            factor = 1 + (i * 0.1) if not dark else 1 - (i * 0.15)
-            shaded = np.clip(base * factor, 0, 1)
-            output.append(tuple(shaded))
-            if len(output) == total_needed:
+            # Adjust brightness toward white if dark, or toward black if light
+            factor = 1 + (i * 0.15) if dark else 1 - (i * 0.15)
+            adjusted = (base * factor).clip(0, 1)
+            output.append(adjusted)
+            if len(output) == total:
                 return output
-    return output[:total_needed]
+    return output[:total]
 
+# === SET FINAL COLORS ===
 if palette:
-    pie_colors = generate_balanced_shades(palette, len(labels))
+    pie_colors = generate_smart_shades(palette, len(labels))
 else:
     pie_colors = plt.get_cmap("tab20c").colors[:len(labels)]
 
@@ -95,14 +83,7 @@ wedges, texts, autotexts = plt.pie(
     wedgeprops={'edgecolor': 'black', 'linewidth': 1}
 )
 
-# === LEGEND: Contributors on side, bot at bottom ===
-sorted_legend = [(w, l) for w, l in zip(wedges, labels) if "bot" not in l.lower()]
-bot_legend = [(w, l) for w, l in zip(wedges, labels) if "bot" in l.lower()]
-final_legend = sorted_legend + bot_legend
-
-wedges_for_legend, labels_for_legend = zip(*final_legend)
-plt.legend(wedges_for_legend, labels_for_legend, title="Contributors", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
-
+plt.legend(wedges, labels, title="Contributors", loc="center left", bbox_to_anchor=(1, 0.5), fontsize=10)
 plt.axis("equal")
 plt.title("Contributions by Commits", fontsize=16, fontweight='bold')
 plt.savefig("contributor-pie.png", bbox_inches="tight")
