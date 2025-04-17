@@ -53,8 +53,8 @@ jobs:
   generate:
     uses: your-username/contrib-pie-generator/.github/workflows/main.yml@v1
     with:
-      chart-size: '8,8'  # [Optional] Input for chart size (width,height)
-      palette: '#0A122A,#698F3F,#E7DECD'  # [Optional] Custom color palette (comma-separated hex values)
+      chart-size: '6,6'  # [Optional] Give your Input for chart size (width,height)
+      palette: '#EBE8DB, #D76C82, #B03052, #3D0301'  # [Optional] Give your Custom color palette (comma-separated hex values)
       repo-url: 'https://api.github.com/repos/your-username/your-repo/contributors'  # Replace with your repository info
 ```
 
@@ -64,4 +64,5 @@ Upon every new update/commit, the chart gets updated automatticaly and it is ref
 ## 🙌 Contribute
 Feel free to open issues or pull requests if you have any improvements, bug fixes, or feature requests.
 
-### Here's to pretty charts, more accountability and more credit where due 🖤
+### 🌀 Even a 0.0% helps complete the circle — every commit matters. This chart celebrates collaboration, not competition. 
+### Here's to pretty charts, more accountability, collaboration and more credit where due 🖤
