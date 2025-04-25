@@ -51,7 +51,7 @@ on:
 
 jobs:
   generate:
-    uses: your-username/contrib-pie-generator/.github/workflows/main.yml@v1
+    uses: redfyel/contrib-pie-generator/.github/workflows/main.yml@v7
     with:
       chart-size: '6,6'  # [Optional] Give your Input for chart size (width,height)
       palette: '#EBE8DB, #D76C82, #B03052, #3D0301'  # [Optional] Give your Custom color palette (comma-separated hex values)
